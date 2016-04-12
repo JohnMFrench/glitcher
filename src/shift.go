@@ -12,77 +12,14 @@ import (
 	"time"
 )
 
-func decode() {
-	infile, err := os.Open("jihadi-john.png")
-	if err != nil {
-		fmt.Print(err)
-	}
-	defer infile.Close()
-	src, _, err := image.Decode(infile)
-	if err != nil {
-		fmt.Print("error: ")
-		fmt.Print(err)
-	}
+func shift() {
+	src := decode("jihadi-john.png")
 	bounds := src.Bounds()
 	w, h := bounds.Max.X, bounds.Max.Y
 	fmt.Print("width: ", w, "\n")
 	fmt.Print("height: ", h, "\n")
 	//white := src.At(0, 0)
 	out := image.NewRGBA(bounds)
-	for y := 0; y < h; y++ {
-		for x := 0; x < w; x++ {
-			if contrast(src, x, y) < 0.1 && x < w-10 {
-				out.Set(x+3, y, color.RGBA{255, 0, 0, 255})
-			} else {
-				out.Set(x, y, src.At(x, y))
-			}
-			//shift some pixels randomly
-			/*
-				rand.Seed(time.Now().UTC().UnixNano())
-				random := rand.Intn(30)
-				if random > 8 && x+random < w-1 {
-					for i := 0; i < random; i++ {
-						out.Set(x+i, y, src.At(x, y))
-					}
-				}
-			*/
-
-			//for debugging pixel values
-			if x%30 == 0 && y%30 == 0 {
-				/*
-					fmt.Print("contrast=")
-					fmt.Println(contrast(src, x, y))
-				*/
-			}
-		}
-	}
-	for x := 0; x < w; x++ {
-		for y := 0; y < h; y++ {
-			if contrast(src, x, y) > 0.8 {
-				rand.Seed(time.Now().UTC().UnixNano())
-				random := rand.Intn(10)
-				if random < 7 {
-					out.Set(x, y, color.Black)
-				}
-			}
-			if brightness(src, x, y) < 225 {
-				rand.Seed(time.Now().UTC().UnixNano())
-				random := rand.Intn(10)
-				if random < 3 && x > randX(src) && x < 155 {
-					out.Set(x, y, colorCloserTo(src, x, y, color.RGBA{241, 53, 125, 255}))
-				}
-			}
-			if brightness(out, x, y) == 0 && contrast(out, x, y) < 0.3 {
-				rand.Seed(time.Now().UTC().UnixNano())
-				r := rand.Intn(255)
-				g := rand.Intn(255)
-				b := rand.Intn(255)
-				out.Set(x, y, color.RGBA{uint8(r), uint8(g), uint8(b), 255})
-			}
-
-		}
-	}
-	getColorList(src)
 	//encode the outfile
 	outfile, err := os.Create("out.png")
 	if err != nil {
@@ -101,10 +38,15 @@ func cleanEnv() {
 }
 
 func randX(img image.Image) int {
-	bounds := img.Bounds()
-	w := bounds.Max.X
+	w := img.Bounds().Max.X
 	rand.Seed(time.Now().UTC().UnixNano())
 	return rand.Intn(w)
+}
+
+func randY(img image.Image) int {
+	h := img.Bounds().Max.Y
+	rand.Seed(time.Now().UTC().UnixNano())
+	return rand.Intn(h)
 }
 
 func brightness(img image.Image, x int, y int) uint8 {
@@ -136,16 +78,25 @@ func contrast(img image.Image, x, y int) float64 {
 	return math.Abs(avg-float64(brightness(img, x, y))) / 255
 }
 
-//returns a list of all RGBA colors in the image
-func getColorsList(img image.Image) List {
+func colorDiff(color1 color.Color, color2 color.Color) float64 {
+	r1, g1, b1, _ := color1.RGBA()
+	r2, g2, b2, _ := color2.RGBA()
+	var diff float64
+	diff = math.Abs(float64(r1-r2)) + math.Abs(float64(b1-b2)) + math.Abs(float64(g1-g2))
+	return (diff / 3) / 255
+}
+
+//returns a list of colors after iterating through the image and collecting
+//all ciolors that are unique enough to not contrast more than the fuzz allowed
+func getColorsListFuzzy(img image.Image, fuzz float64) *list.List {
 	w, h := img.Bounds().Max.X, img.Bounds().Max.Y
 	colors := list.New()
 	for x := 0; x < w; x++ {
 		for y := 0; y < h; y++ {
 			cellColor := img.At(x, y)
 			found := false
-			for color = colors.First; colors != nil; colors.Next() {
-				if color == cellColor {
+			for c := colors.Front(); c != nil; c = c.Next() {
+				if colorDiff(c.Value.(color.Color), cellColor) > fuzz {
 					found = true
 					break
 				}
@@ -155,7 +106,35 @@ func getColorsList(img image.Image) List {
 			}
 		}
 	}
-	fmt.Print(colors.Len(), " colors found")
+	fmt.Print(colors.Len(), " colors with a fuzz of ", fuzz)
+	return colors
+}
+
+func getTopColors(img image.Image) *list.List {
+	var color_totals map[color.NRGBA]uint32
+	color_totals = make(map[color.NRGBA]uint32)
+	colors := getColorsListFuzzy(img, 1.0)
+	for c := colors.Front(); c != nil; c = c.Next() {
+		color_totals[c.Value.(color.NRGBA)] = 0
+	}
+	w, h := img.Bounds().Max.X, img.Bounds().Max.Y
+	for x := 0; x < w; x++ {
+		for y := 0; y < h; y++ {
+			cell_color := img.At(x, y)
+			color_totals[cell_color.(color.NRGBA)]++
+		}
+	}
+	var highest uint32
+	highest = 0
+	for c, _ := range color_totals {
+		if color_totals[c] > highest {
+			highest = color_totals[c]
+			fmt.Print("highest=")
+			fmt.Print(highest)
+			fmt.Print(c)
+			fmt.Print("\n")
+		}
+	}
 	return colors
 }
 
@@ -168,7 +147,31 @@ func colorCloserTo(img image.Image, x int, y int, newColor color.RGBA) color.RGB
 	return color.RGBA{nr, ng, nb, 255}
 }
 
+func decode(filename string) image.Image {
+	file, err := os.Open(filename)
+	if err != nil {
+		fmt.Print(err)
+	}
+	defer file.Close()
+	src, _, err := image.Decode(file)
+	if err != nil {
+		fmt.Print(err)
+		return nil
+	} else {
+		return src
+	}
+}
+
+func test() {
+	img := decode("jihadi-john.png")
+	//getColorsListFuzzy(img, 0.5)
+	getTopColors(img)
+}
+
 func main() {
-	cleanEnv()
-	decode()
+	/*
+		cleanEnv()
+		shift()
+	*/
+	test()
 }
