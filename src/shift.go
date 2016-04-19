@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/gif"
 	"image/png"
 	"math"
 	"math/rand"
@@ -318,7 +319,7 @@ func colorCloserTo(img image.Image, x int, y int, newColor color.RGBA) color.RGB
 //where filename is the name of the file without it's type
 func decode(filename string) image.Image {
 	//concatenate the filename (not performant)
-	filename = "img/" + filename + ".png"
+	filename = "img/" + filename
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Print(err)
@@ -334,15 +335,35 @@ func decode(filename string) image.Image {
 	}
 }
 
+func decodeGif(filename string) *gif.GIF {
+	filename = "img/" + filename + ".gif"
+	file, err := os.Open(filename)
+	if err != nil {
+		fmt.Print(err)
+		panic(err)
+	}
+	defer file.Close()
+	gif, err := gif.DecodeAll(file)
+	if err != nil {
+		fmt.Print(err)
+		return gif
+	} else {
+		return gif
+	}
+}
+
 func test() {
 	//img := decode("jihadi-john.png")
 	//getColorsListFuzzy(img, 0.5)
 	//getTopColors(img, 5)
-
+	img := decodeGif("pool")
+	fmt.Print(len(img.Delay))
+	//avg := meanContrast(img)
+	//fmt.Print("average contrast=", avg)
 }
 
 func main() {
 	//cleanEnv()
-	shift()
-	//test()
+	//shift()
+	test()
 }
