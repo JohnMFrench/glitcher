@@ -1,3 +1,7 @@
-src/*
-!src/shift.go
-!src/server.go
+#ignore some directories
+bin
+pkg
+lib
+#ignore any png files or gifs
+*.png
+*.gif

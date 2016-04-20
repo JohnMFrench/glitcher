@@ -44,8 +44,8 @@ func shift() {
 			}
 		}
 	}
-	blockDrip(src, out, 0, -1, 40, 30, 0.0005)
-	blockDrip(src, out, -1, -1, 20, 10, 0.0008)
+	//blockDrip(src, out, 0, -1, 40, 30, 0.0005)
+	//blockDrip(src, out, -1, -1, 20, 10, 0.0008)
 	transposeX(src, out, 100, randX(src), randX(src))
 	transposeY(src, out, 90, randY(src), randY(src))
 	transposeY(src, out, 60, randY(src), randY(src))
@@ -269,15 +269,15 @@ func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func getTopColors(img image.Image, n int) *list.List {
 	var color_totals map[color.Color]uint32
 	color_totals = make(map[color.Color]uint32)
-	colors := getColorsListFuzzy(img, 0.005)
+	colors := getColorsListFuzzy(img, 0.1)
 	for c := colors.Front(); c != nil; c = c.Next() {
-		color_totals[c.Value.(color.RGBA)] = 0
+		color_totals[c.Value.(color.NRGBA)] = 0
 	}
 	w, h := img.Bounds().Max.X, img.Bounds().Max.Y
 	for x := 0; x < w; x++ {
 		for y := 0; y < h; y++ {
 			cell_color := img.At(x, y)
-			color_totals[cell_color.(color.RGBA)]++
+			color_totals[cell_color.(color.NRGBA)]++
 		}
 	}
 	p1 := make(PairList, len(color_totals))
@@ -358,7 +358,7 @@ func test() {
 	//getColorsListFuzzy(img, 0.5)
 	//getTopColors(img, 5)
 	img := decodeGif("pool")
-	fmt.Print(len(img.Image), " frames")
+	fmt.Println(len(img.Image), " frames")
 	shiftGif(img)
 	//fmt.Print("found ", colors.Len(), " colors")
 	//avg := meanContrast(img)
@@ -370,14 +370,15 @@ func shiftGif(g *gif.GIF) {
 	w, h := g.Image[0].Bounds().Max.X, g.Image[0].Bounds().Max.Y
 	var images []*image.Paletted
 	var delay []int
-	vaporwave_img := decode("vaporwave_palette")
-	colors := getTopColors(vaporwave_img, 5)
+	vaporwave_img := decode("vaporwave_palette2")
+	num_of_colors := 29
+	colors := getTopColors(vaporwave_img, num_of_colors)
 	fmt.Print(colors.Len(), " colors found", "\n")
-	var palette = make([]color.Color, 5)
+	var palette = make([]color.Color, num_of_colors)
 	c := colors.Front()
-	for i := 0; i < 5; i++ {
-		palette[i] = c.Value.(color.RGBA)
-		i++
+	for i := 0; i < num_of_colors; i++ {
+		palette[i] = c.Value.(color.Color)
+		fmt.Println("added color ", palette[i])
 		c = c.Next()
 	}
 	fmt.Print("images array size of ", len(images), "\n")
@@ -393,11 +394,12 @@ func shiftGif(g *gif.GIF) {
 				//fmt.Print("color vals of (", r, ", ", b, ", ", g, ")\n")
 				//r2, g2, b2, _ := images[i2].At(ix, iy).RGBA()
 				//fmt.Print("out color vals of (", r2, ", ", b2, ", ", g2, ")\n")
-				fmt.Print("at index ", ix, ", ", iy, "\n")
-				fmt.Println(clor)
+				//fmt.Print("at index ", ix, ", ", iy, "\n")
+				//fmt.Println(clor)
 				frame_out.Set(ix, iy, clor)
 			}
 		}
+		fmt.Print(meanContrast(g.Image[i2]))
 		images = append(images, frame_out)
 		delay = append(delay, 0)
 	}
