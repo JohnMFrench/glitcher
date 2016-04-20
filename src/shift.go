@@ -235,12 +235,13 @@ func iterate(out *image.RGBA, foo func(c color.RGBA)) {
 func getColorsListFuzzy(img image.Image, fuzz float64) *list.List {
 	w, h := img.Bounds().Max.X, img.Bounds().Max.Y
 	colors := list.New()
+	found := false
 	for x := 0; x < w; x++ {
 		for y := 0; y < h; y++ {
 			cellColor := img.At(x, y)
-			found := false
+			found = false
 			for c := colors.Front(); c != nil; c = c.Next() {
-				if colorDiff(c.Value.(color.Color), cellColor) > fuzz {
+				if colorDiff(c.Value.(color.Color), cellColor) < fuzz {
 					found = true
 					break
 				}
@@ -266,9 +267,9 @@ func (p PairList) Less(i, j int) bool { return p[i].Value < p[j].Value }
 func (p PairList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 func getTopColors(img image.Image, n int) *list.List {
-	var color_totals map[color.RGBA]uint32
-	color_totals = make(map[color.RGBA]uint32)
-	colors := getColorsListFuzzy(img, 1.0)
+	var color_totals map[color.Color]uint32
+	color_totals = make(map[color.Color]uint32)
+	colors := getColorsListFuzzy(img, 0.005)
 	for c := colors.Front(); c != nil; c = c.Next() {
 		color_totals[c.Value.(color.RGBA)] = 0
 	}
@@ -319,7 +320,7 @@ func colorCloserTo(img image.Image, x int, y int, newColor color.RGBA) color.RGB
 //where filename is the name of the file without it's type
 func decode(filename string) image.Image {
 	//concatenate the filename (not performant)
-	filename = "img/" + filename
+	filename = "img/" + filename + ".png"
 	file, err := os.Open(filename)
 	if err != nil {
 		fmt.Print(err)
@@ -345,6 +346,7 @@ func decodeGif(filename string) *gif.GIF {
 	defer file.Close()
 	gif, err := gif.DecodeAll(file)
 	if err != nil {
+		fmt.Print("error!!!\n:")
 		fmt.Print(err)
 		return gif
 	} else {
@@ -353,13 +355,57 @@ func decodeGif(filename string) *gif.GIF {
 }
 
 func test() {
-	//img := decode("jihadi-john.png")
 	//getColorsListFuzzy(img, 0.5)
 	//getTopColors(img, 5)
 	img := decodeGif("pool")
-	fmt.Print(len(img.Delay))
+	fmt.Print(len(img.Image), " frames")
+	shiftGif(img)
+	//fmt.Print("found ", colors.Len(), " colors")
 	//avg := meanContrast(img)
 	//fmt.Print("average contrast=", avg)
+}
+
+func shiftGif(g *gif.GIF) {
+	out, _ := os.OpenFile("out.gif", os.O_WRONLY|os.O_CREATE, 0600)
+	w, h := g.Image[0].Bounds().Max.X, g.Image[0].Bounds().Max.Y
+	var images []*image.Paletted
+	var delay []int
+	vaporwave_img := decode("vaporwave_palette")
+	colors := getTopColors(vaporwave_img, 5)
+	fmt.Print(colors.Len(), " colors found", "\n")
+	var palette = make([]color.Color, 5)
+	c := colors.Front()
+	for i := 0; i < 5; i++ {
+		palette[i] = c.Value.(color.RGBA)
+		i++
+		c = c.Next()
+	}
+	fmt.Print("images array size of ", len(images), "\n")
+	fmt.Print("g.Image array size of ", len(g.Image), "\n")
+	fmt.Print("w=", w, " & h=", h, "\n")
+	for i2 := 0; i2 < len(g.Image); i2++ {
+		frame_in := g.Image[i2]
+		frame_out := image.NewPaletted(image.Rect(0, 0, w, h), palette)
+		for ix := 0; ix < w; ix++ {
+			for iy := 0; iy < h; iy++ {
+				clor := frame_in.At(ix, iy)
+				//r, g, b, _ := clor.RGBA()
+				//fmt.Print("color vals of (", r, ", ", b, ", ", g, ")\n")
+				//r2, g2, b2, _ := images[i2].At(ix, iy).RGBA()
+				//fmt.Print("out color vals of (", r2, ", ", b2, ", ", g2, ")\n")
+				fmt.Print("at index ", ix, ", ", iy, "\n")
+				fmt.Println(clor)
+				frame_out.Set(ix, iy, clor)
+			}
+		}
+		images = append(images, frame_out)
+		delay = append(delay, 0)
+	}
+	defer out.Close()
+	gif.EncodeAll(out, &gif.GIF{
+		Image: images,
+		Delay: delay,
+	})
 }
 
 func main() {

@@ -7,7 +7,7 @@ import (
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	file, err := ioutil.ReadFile("out.png")
+	file, err := ioutil.ReadFile("out.gif")
 	if err != nil {
 		fmt.Print(err)
 	}
