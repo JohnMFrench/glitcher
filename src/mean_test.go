@@ -11,3 +11,8 @@ func TestMean(t *testing.T) {
 		t.Error("mean is broken (output is ", m, ")")
 	}
 }
+
+func TestStDev(t *testing.T) {
+	floats :[]float64{9, 2, 5, 4, 12, 7, 8, 11, 9, 3, 7, 4, 12, 5, 4, 10, 9, 6, 9, 4}
+	stdev := 
+}
