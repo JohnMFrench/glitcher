@@ -7,11 +7,8 @@ import (
 	"image/color"
 	"image/gif"
 	"image/png"
-	"math"
-	"math/rand"
 	"os"
 	"sort"
-	"time"
 )
 
 func shift() {
@@ -198,10 +195,4 @@ func shiftGif(g *gif.GIF) {
 		Image: images,
 		Delay: delay,
 	})
-}
-
-func main() {
-	//cleanEnv()
-	//shift()
-	test()
 }

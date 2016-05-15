@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/gif"
-	"image/png"
 	"os"
 )
 
@@ -56,7 +55,7 @@ func decodeGif(filename string) *gif.GIF {
 func test() {
 	//getColorsListFuzzy(img, 0.5)
 	//getTopColors(img, 5)
-	img := decodeGif("pool")
+	img := decodeGif("ocean")
 	fmt.Println(len(img.Image), " frames")
 	shiftGif(img)
 	//fmt.Print("found ", colors.Len(), " colors")
@@ -65,7 +64,6 @@ func test() {
 }
 
 func main() {
-	//cleanEnv()
-	//shift()
+	cleanEnv()
 	test()
 }

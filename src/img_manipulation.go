@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"image"
-	"image/color"
+	"math/rand"
+	"time"
 )
 
 //where ltr means the image drips left to right and degree represents

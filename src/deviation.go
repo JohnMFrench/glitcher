@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"math"
 )
 
 func meanContrast(img image.Image) float64 {
@@ -27,6 +26,7 @@ func mean(floats []float64) float64 {
 
 type perPixel func(img image.Image) float64
 
+/*
 func pixelFuncStDev(img image.Image, fun perPixel) float64 {
 	w, h := img.Bounds().Max.X, img.Bounds().Max.Y
 	mean := meanContrast(image.Image)
@@ -39,3 +39,4 @@ func pixelFuncStDev(img image.Image, fun perPixel) float64 {
 	mean_sum_squares := sum_squares / (w * h)
 	return math.Sqrt(mean_sum_squares)
 }
+*/
